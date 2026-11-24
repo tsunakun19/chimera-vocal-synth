@@ -15,14 +15,15 @@ use chimera::engine::{Engine, SUB_BLOCK};
 use chimera::math::{midi_to_hz, pow};
 use chimera::phonetics::Syllable;
 use chimera::phonetics::beatbox::{BEAT_PRESETS, BeatStep, parse_beat};
+use chimera::phonetics::mandarin::MandarinLexicon;
 use chimera::phonetics::sing::LiveSyllable;
-use chimera::phonetics::syllables::lyrics_to_syllables;
+use chimera::phonetics::syllables::{Lang, lyrics_in};
 use chimera::voice::human_voice::{HumanVoice, SourcePatch, TELE_LABELS, VoiceTelemetry};
 use serde::{Deserialize, Serialize};
 
 use crate::close_mic::CloseMic;
 use crate::g2p;
-use crate::speech::{SpeechSettings, SpokenLine, plan_lines};
+use crate::speech::{SpeechSettings, SpokenLine, plan_lines_in};
 
 /// The lowest sample rate the engine is stable at (Hz): the airway gives NaN at 22.05 kHz.
 pub const MIN_SAMPLE_RATE: f64 = 32000.0;
@@ -137,6 +138,7 @@ struct Hum {
 pub struct Settings {
     pub version: u32,
     pub lyrics: String,
+    pub lang: Lang,
     pub body: BodyMix,
     pub mode: Mode,
     /// the articulators changed from neutral
@@ -153,7 +155,7 @@ pub struct Settings {
 
 impl Default for Settings {
     fn default() -> Self {
-        Settings { version: 1, lyrics: DEFAULT_LYRICS.to_string(), body: BodyMix::MALE, mode: Mode::Sing, artic: ArticPatch::default(), tip_free: true, voiced: true, f0: 110.0, start_syllable: 0, speech: SpeechSettings::default(), beat: BeatSettings::default() }
+        Settings { version: 1, lyrics: DEFAULT_LYRICS.to_string(), lang: Lang::En, body: BodyMix::MALE, mode: Mode::Sing, artic: ArticPatch::default(), tip_free: true, voiced: true, f0: 110.0, start_syllable: 0, speech: SpeechSettings::default(), beat: BeatSettings::default() }
     }
 }
 
@@ -261,7 +263,7 @@ pub struct Prepared {
 
 impl Prepared {
     pub fn of(settings: &Settings, shared: &Shared) -> Prepared {
-        Prepared { syllables: lyrics_to_syllables(&settings.lyrics, g2p()), speech: plan_lines(&settings.speech, settings.body, g2p()), generation: shared.next_generation() }
+        Prepared { syllables: lyrics_in(&settings.lyrics, g2p(), &MandarinLexicon::new(), settings.lang), speech: plan_lines_in(&settings.speech, settings.body, g2p(), settings.lang), generation: shared.next_generation() }
     }
 }
 

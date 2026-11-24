@@ -154,7 +154,7 @@ export class MandarinLexicon {
 
 /**
  * Lyrics → sung syllables through the built-in front ends: pinyin, the Latin-script language
- * (`lang`: English through the page's dictionary, see EnglishG2P, or Turkish), Korean, Russian,
+ * (`lang`: English through the page's dictionary, see EnglishG2P, Turkish, or Brazilian Portuguese), Korean, Russian,
  * and Mandarin once its lexicon is loaded.
  */
 export function lyricsToSyllables(text: string, lang: Lang = "en"): Syllable[] {
@@ -167,6 +167,11 @@ export function lyricsToSyllables(text: string, lang: Lang = "en"): Syllable[] {
  */
 export function turkishPhrases(text: string): Phrase[] {
   return call("trPhrases", { text });
+}
+
+/** Brazilian Portuguese text → phrases of segments; its spelling rules are the G2P. */
+export function portuguesePhrases(text: string): Phrase[] {
+  return call("ptPhrases", { text });
 }
 
 // ------------------------------------------------------------------ planning

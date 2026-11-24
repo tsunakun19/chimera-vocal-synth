@@ -155,6 +155,16 @@ async function run(viewport: { width: number; height: number }, tag: string) {
   const speakAgain = { chip: await tr(".right-speak").getAttribute("aria-pressed"), box: await sayBox.inputValue() };
   logs.push(`[${tag}] language: TR in Speak, in Sing ${inSing}; Speak again ${JSON.stringify(speakAgain)}`);
   if (inSing !== "true" || speakAgain.chip !== "true" || speakAgain.box !== "Merhaba, nasılsın?") errors.push(`[${tag}] Speak and Sing don't share the language (Sing ${inSing}, Speak again ${JSON.stringify(speakAgain)})`);
+  const pt = (scope: string) => page.locator(scope).getByRole("button", { name: "Brazilian Portuguese" });
+  await pt(".right-speak").click();
+  await page.getByRole("radio", { name: "Sing" }).click();
+  await page.waitForTimeout(200);
+  const ptInSing = await pt(".s-lyrics").getAttribute("aria-pressed");
+  await page.getByRole("radio", { name: "Speak" }).click();
+  await page.waitForTimeout(200);
+  const ptSpeakAgain = { chip: await pt(".right-speak").getAttribute("aria-pressed"), box: await sayBox.inputValue() };
+  logs.push(`[${tag}] language: PT in Speak, in Sing ${ptInSing}; Speak again ${JSON.stringify(ptSpeakAgain)}`);
+  if (ptInSing !== "true" || ptSpeakAgain.chip !== "true" || ptSpeakAgain.box !== "Olá, tudo bem?") errors.push(`[${tag}] Speak and Sing don't share Brazilian Portuguese (Sing ${ptInSing}, Speak again ${JSON.stringify(ptSpeakAgain)})`);
   await page.locator(".right-speak").getByRole("button", { name: "English" }).click();
   // sing mode: a key sings the marked syllable and moves the cursor; legato; a demo song
   await page.getByRole("radio", { name: "Sing" }).click();

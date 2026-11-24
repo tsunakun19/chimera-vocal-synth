@@ -12,14 +12,15 @@ use chimera::control::beat_player::BeatPlayer;
 use chimera::control::score::Label;
 use chimera::engine::{Engine, default_f0};
 use chimera::phonetics::beatbox::{BeatStep, beat_ready};
-use chimera::phonetics::syllables::lyrics_to_syllables;
+use chimera::phonetics::mandarin::MandarinLexicon;
+use chimera::phonetics::syllables::{Lang, lyrics_in};
 use chimera::voice::human_voice::{SourcePatch, TELE_LABELS};
 use nih_plug::params::internals::ParamPtr;
 use nih_plug::prelude::{GuiContext, Params};
 use serde::Deserialize;
 
 use crate::core::{MIN_SAMPLE_RATE, Mode, Shared, UiNote};
-use crate::speech::{plan_lines, plan_pad};
+use crate::speech::{plan_lines_in, plan_pad};
 use crate::{ChimeraParams, g2p};
 
 include!(concat!(env!("OUT_DIR"), "/assets.rs"));
@@ -140,6 +141,7 @@ struct Envelope {
 enum Command {
     Note { midi: u8, on: bool, velocity: Option<f64> },
     Lyrics { text: String },
+    Language { lang: Lang, lyrics: String },
     Cursor { index: usize },
     Body { body: BodyMix },
     Mode { mode: Mode },
@@ -357,13 +359,26 @@ impl Bridge {
         match cmd {
             Command::Note { midi, on, velocity } => shared.ui_note(UiNote { midi: midi.min(127), velocity: velocity.unwrap_or(96.0), on }),
             Command::Lyrics { text } => {
-                let syllables = lyrics_to_syllables(&text, g2p());
+                let lang = settings().lang;
+                let syllables = lyrics_in(&text, g2p(), &MandarinLexicon::new(), lang);
                 {
                     let mut s = settings();
                     s.lyrics = text;
                     s.start_syllable = 0;
                 }
                 shared.send_lyrics(syllables);
+            }
+            Command::Language { lang, lyrics } => {
+                let (lyrics, speech, body) = {
+                    let mut s = settings();
+                    s.lang = lang;
+                    s.lyrics = lyrics;
+                    s.start_syllable = 0;
+                    (s.lyrics.clone(), s.speech.clone(), s.body)
+                };
+                let syllables = lyrics_in(&lyrics, g2p(), &MandarinLexicon::new(), lang);
+                shared.send_lyrics(syllables);
+                shared.send_speech(plan_lines_in(&speech, body, g2p(), lang), true);
             }
             Command::Cursor { index } => {
                 if !shared.playing.load(Ordering::Relaxed) {
@@ -384,7 +399,8 @@ impl Bridge {
                 }
                 // what a line says depends on the airway saying it
                 let speech = settings().speech.clone();
-                shared.send_speech(plan_lines(&speech, body, g2p()), false);
+                let lang = settings().lang;
+                shared.send_speech(plan_lines_in(&speech, body, g2p(), lang), false);
             }
             Command::Mode { mode } => {
                 let mut s = settings();
@@ -434,7 +450,7 @@ impl Bridge {
             Command::Speech { text, ipa, rate } => {
                 // new words start from the first line; a new rate carries on where it was
                 let reset = text.is_some() || ipa.is_some();
-                let (speech, body) = {
+                let (speech, body, lang) = {
                     let mut s = settings();
                     if let Some(t) = text {
                         s.speech.text = t;
@@ -448,9 +464,9 @@ impl Bridge {
                     if reset {
                         s.speech.start_line = 0;
                     }
-                    (s.speech.clone(), s.body)
+                    (s.speech.clone(), s.body, s.lang)
                 };
-                shared.send_speech(plan_lines(&speech, body, g2p()), reset);
+                shared.send_speech(plan_lines_in(&speech, body, g2p(), lang), reset);
             }
             Command::SpeechCursor { index } => {
                 if !shared.playing.load(Ordering::Relaxed) {

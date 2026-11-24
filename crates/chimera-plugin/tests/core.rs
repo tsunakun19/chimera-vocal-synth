@@ -5,9 +5,10 @@ use chimera::control::beat_player::BeatPlayer;
 use chimera::phonetics::Syllable;
 use chimera::phonetics::beatbox::{BEAT_SOUNDS, BeatStep, parse_beat};
 use chimera::phonetics::syllables::lyrics_to_syllables;
+use chimera::phonetics::syllables::Lang;
 use chimera_plugin::core::{BEAT_LATENCY, BeatSettings, Core, DEFAULT_LYRICS, Event, Mode, NOT_SPEAKING, Prepared, SAYING_PAD, Settings, Shared, Transport, UiNote, VoiceParams, drum_pad};
 use chimera_plugin::{ChimeraParams, g2p};
-use chimera_plugin::speech::{SpeechSettings, plan_lines, plan_pad};
+use chimera_plugin::speech::{SpeechSettings, plan_lines, plan_lines_in, plan_pad};
 use std::sync::atomic::Ordering;
 
 const FS: f64 = 44100.0;
@@ -384,6 +385,7 @@ fn a_restored_project_comes_back() {
     // and a project saved by an older build, with less in it, still loads
     let old: Settings = serde_json::from_str(r#"{"version":1,"lyrics":"la"}"#).unwrap();
     assert_eq!((old.lyrics.as_str(), old.voiced, old.f0), ("la", true, 110.0));
+    assert_eq!(old.lang, Lang::En);
     assert_eq!(Settings::default().lyrics, DEFAULT_LYRICS);
 }
 
@@ -519,6 +521,15 @@ fn speaking(text: &str, shared: &Shared) -> Core {
 
 fn spoken(shared: &Shared) -> i32 {
     shared.spoken_line.load(Ordering::Relaxed)
+}
+
+#[test]
+fn speak_uses_the_selected_portuguese_front_end() {
+    let settings = SpeechSettings { text: "tia".into(), ..Default::default() };
+    let portuguese = plan_lines_in(&settings, BodyMix::MALE, g2p(), Lang::Pt);
+    assert!(portuguese[0].phrases[0].segments.iter().any(|s| s.ipa == "tʃ"));
+    let english = plan_lines(&settings, BodyMix::MALE, g2p());
+    assert!(!english[0].phrases[0].segments.iter().any(|s| s.ipa == "tʃ"));
 }
 
 #[test]
