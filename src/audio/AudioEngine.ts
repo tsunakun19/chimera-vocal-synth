@@ -379,6 +379,10 @@ export class AudioEngine {
     ipc({ type: "lyrics", text });
   }
 
+  pluginLanguage(lang: string, lyrics: string): void {
+    ipc({ type: "language", lang, lyrics });
+  }
+
   pluginCursor(index: number): void {
     ipc({ type: "cursor", index });
   }

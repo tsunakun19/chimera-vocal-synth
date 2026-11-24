@@ -14,6 +14,7 @@ pub mod japanese;
 pub mod korean;
 pub mod mandarin;
 pub mod planner;
+pub mod portuguese;
 pub mod russian;
 pub mod sing;
 pub mod songs;

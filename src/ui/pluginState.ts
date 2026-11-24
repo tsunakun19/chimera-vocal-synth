@@ -29,7 +29,7 @@ type Params = Record<string, number>;
 interface Snapshot {
   revision: number;
   syllablesVersion: number;
-  settings: { lyrics: string; body: BodyMix; mode: "sing" | "play" | "speak" | "beatbox"; artic: Partial<HumanArtic>; tipFree: boolean; voiced: boolean; f0: number; speech: { text: string; ipa: boolean; rate: number }; beat: { steps: (BeatStep | null)[]; bpm: number; swing: number; preset: string | null; mic: boolean; follow: boolean } };
+  settings: { lyrics: string; lang: "en" | "tr" | "pt"; body: BodyMix; mode: "sing" | "play" | "speak" | "beatbox"; artic: Partial<HumanArtic>; tipFree: boolean; voiced: boolean; f0: number; speech: { text: string; ipa: boolean; rate: number }; beat: { steps: (BeatStep | null)[]; bpm: number; swing: number; preset: string | null; mic: boolean; follow: boolean } };
   params: Params;
   syllables: Syllable[];
   cursor: number;
@@ -81,7 +81,7 @@ function adopt(s: Snapshot): void {
   for (const [key, id] of Object.entries(ARTIC_PARAMS)) (artic as unknown as Params)[key] = s.params[id];
   const { mic, ...beat } = s.settings.beat;
   useStore.setState({ started: true, mode: s.settings.mode, body: s.settings.body, source, artic, tipFree: s.settings.tipFree, volume: dbToVolume(s.params.gain), hold: false, heldNotes: [], mic, beat: { ...beat, playing: false, following: false, hostBpm: 0 } });
-  useSing.setState({ lyrics: s.settings.lyrics, syllables: s.syllables, cursor: s.cursor, vibrato: s.params.vibrato });
+  useSing.setState({ lyrics: s.settings.lyrics, lang: s.settings.lang, syllables: s.syllables, cursor: s.cursor, vibrato: s.params.vibrato });
   linesGeneration = s.speech.generation;
   const { text, ipa, rate } = s.settings.speech;
   useSpeech.setState({ text, ipa, rate, lines: s.speech.lines, cursor: s.speechCursor });
@@ -180,7 +180,9 @@ function loop(): void {
         // a poll sets engine.error itself, which clears LOST
         answered = performance.now();
       },
-      (e) => console.error("plugin poll:", e),
+      (e) => {
+        if (!(e instanceof DOMException && e.name === "AbortError")) console.error("plugin poll:", e);
+      },
     )
     .finally(() => {
       if (performance.now() - answered < LOST_AFTER) {

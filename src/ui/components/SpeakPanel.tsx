@@ -20,6 +20,7 @@ import { inPlugin } from "../../audio/pluginBridge.ts";
 const EXAMPLES: Record<Lang, string[]> = {
   en: ["Hello. Can you hear me?", "She sells sea shells by the sea shore.", "Every sound here is air moving through a throat.", "The quick brown fox jumps over the lazy dog."],
   tr: ["Merhaba, nasılsın?", "Bugün hava çok güzel.", "Türkçe konuşabiliyor musun?", "Şu köşe yaz köşesi, şu köşe kış köşesi."],
+  pt: ["Olá, tudo bem?", "A menina canta uma canção.", "O som passa pelo ar e pela garganta.", "São Paulo, Rio de Janeiro e Brasil."],
 };
 
 // IPA pulmonic consonant chart (rows = manner, columns = place); empty cells are null
@@ -227,8 +228,7 @@ export function SpeakRight() {
         <div className="act-slider">
           <Slider label="Rate" value={rate} min={0.5} max={1.8} onChange={setRate} format={(v) => `${v.toFixed(2)}×`} />
         </div>
-        {/* the plugin reads Latin script as English (other scripts by their own front ends) */}
-        {!inPlugin && <LangPick value={lang} onChange={pickLang} off={ipa} />}
+        <LangPick value={lang} onChange={pickLang} off={ipa} />
         <Chip on={ipa} onClick={() => setIpa(!ipa)}>
           Text is IPA
         </Chip>

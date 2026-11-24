@@ -6,7 +6,8 @@ use chimera::engine::default_f0;
 use chimera::phonetics::english::{EnglishG2P, Phrase};
 use chimera::phonetics::ipa::tokenize_ipa;
 use chimera::phonetics::planner::{PhraseInput, PlanOptions, plan_phrases};
-use chimera::phonetics::{Intonation, Plan};
+use chimera::phonetics::syllables::Lang;
+use chimera::phonetics::{Intonation, Plan, portuguese, turkish};
 use serde::{Deserialize, Serialize};
 
 /// The text to say and how, as a project saves it.
@@ -48,9 +49,22 @@ fn plan(text: &str, phrases: Vec<Phrase>, body: BodyMix, rate: f64) -> SpokenLin
 
 /// Every line of the text with something to say. Allocates: not on the audio thread.
 pub fn plan_lines(s: &SpeechSettings, body: BodyMix, g2p: &EnglishG2P) -> Vec<SpokenLine> {
+    plan_lines_in(s, body, g2p, Lang::En)
+}
+
+/// Every line planned with the selected Latin-script front end.
+pub fn plan_lines_in(s: &SpeechSettings, body: BodyMix, g2p: &EnglishG2P, lang: Lang) -> Vec<SpokenLine> {
     let mut lines = Vec::new();
     for line in s.text.lines().map(str::trim).filter(|l| !l.is_empty()) {
-        let phrases = if s.ipa { ipa_phrases(line) } else { g2p.to_phrases(line) };
+        let phrases = if s.ipa {
+            ipa_phrases(line)
+        } else {
+            match lang {
+                Lang::En => g2p.to_phrases(line),
+                Lang::Tr => turkish::to_phrases(line),
+                Lang::Pt => portuguese::to_phrases(line),
+            }
+        };
         if !phrases.is_empty() {
             lines.push(plan(line, phrases, body, s.rate));
         }

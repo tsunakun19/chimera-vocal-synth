@@ -275,7 +275,7 @@ export function SingRight() {
       <Screen watch className="s-roll" title="Pitch">
         <PianoRoll />
       </Screen>
-      <Screen className="s-lyrics" title="Lyrics" tools={inPlugin ? undefined : <LyricsLang />}>
+      <Screen className="s-lyrics" title="Lyrics" tools={<LyricsLang />}>
         <Lyrics />
       </Screen>
       <Screen watch className="s-spec" title="Spectrum" sub={ring ? "Ring on" : ""}>

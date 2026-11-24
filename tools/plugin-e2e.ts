@@ -118,6 +118,21 @@ try {
   await page.mouse.up();
   await until("releasing it ends the note", async () => (await tele())!.voicing < 0.1);
 
+  // ---- the selected language reaches Rust and is shared by Speak
+  const language = page.getByRole("group", { name: "Language" });
+  await language.getByRole("button", { name: "Brazilian Portuguese" }).click();
+  await until("Portuguese selection reaches the project", async () => (await state()).settings.lang === "pt");
+  check("the selected language preserves the lyrics", (await state()).settings.lyrics === "one two three");
+  await page.getByRole("radio", { name: "Speak" }).click();
+  const speakLanguage = page.getByRole("group", { name: "Language" });
+  check("Speak shares the Portuguese selection", await speakLanguage.getByRole("button", { name: "Brazilian Portuguese" }).getAttribute("aria-pressed") === "true");
+  await speakLanguage.getByRole("button", { name: "English" }).click();
+  await until("English remains the default after switching back", async () => (await state()).settings.lang === "en");
+  await page.getByRole("radio", { name: "Sing" }).click();
+  check("the original lyrics remain intact", (await state()).settings.lyrics === "one two three");
+  await page.locator(".syl").nth(1).click();
+  await until("language selection resets the cursor", async () => (await next()) === "two");
+
   // ---- the host's keys
   await host("note", 64);
   await until("a host note sings the next syllable", async () => (await next()) === "three");
